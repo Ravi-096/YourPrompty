@@ -1,28 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Sparkles, Heart, Star } from 'lucide-react';
+import { X, Send, Sparkles, Heart, Star } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
-const Chatbot = () => {
+interface ChatbotProps {
+  user?: any;
+  onTriggerAction?: (action: string, data?: any) => void;
+}
+
+const Chatbot: React.FC<ChatbotProps> = ({ onTriggerAction }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'bot', timestamp: number}>>([
     { id: 1, text: "Hey there! 👋 I'm Prompty, your creative assistant!", sender: 'bot', timestamp: Date.now() }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [botMood, setBotMood] = useState('happy');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const botResponses = [
-    "That's awesome! 🎨 What kind of prompts are you looking for?",
-    "I love helping creators! ✨ Need some inspiration?",
-    "Ooh, interesting! 🤔 Tell me more about your project!",
-    "You're so creative! 🌟 I'm here to help you shine!",
-    "That sounds amazing! 🚀 Let's make something beautiful together!",
-    "I'm excited to help! 💫 What's your vision?",
-    "Cool beans! 🎯 Ready to create something epic?",
-    "You've got great taste! 👌 I can help you find the perfect prompt!",
-    "Woohoo! 🎉 Let's dive into the world of AI creativity!",
-    "I'm all ears! 👂 Share your creative dreams with me!"
-  ];
 
   const randomGreetings = [
     "Hiya! 👋",
@@ -63,33 +58,80 @@ const Chatbot = () => {
     }
   }, [isOpen]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage = {
       id: Date.now(),
       text: inputValue,
-      sender: 'user',
+      sender: 'user' as const,
       timestamp: Date.now()
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
+    setRateLimitError(null);
 
-    // Simulate bot typing and response
-    setTimeout(() => {
+    try {
+      const response = await apiFetch('/api/chat/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: inputValue,
+          context: 'Browsing home feed',
+          conversationId: conversationId
+        })
+      });
+    
+      // ✅ Check ok BEFORE parsing
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to get response');
+
+
+      }
+    
+      const data = await response.json();
       setIsTyping(false);
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
+
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+      }
+    
+      // ✅ Check data.message exists
+      const botReply = data.message || "Sorry, I didn't get that. Try again! 😊";
+    
       const botMessage = {
         id: Date.now() + 1,
-        text: randomResponse,
-        sender: 'bot',
+        text: botReply,
+        sender: 'bot' as const,
         timestamp: Date.now()
       };
+    
       setMessages(prev => [...prev, botMessage]);
       setBotMood(Math.random() > 0.5 ? 'excited' : 'happy');
-    }, 1500);
+    
+      if (data.actions?.length > 0 && onTriggerAction) {
+        data.actions.forEach((action: any) => {
+          onTriggerAction(action.type, action);
+        });
+      }
+    
+    } catch (error: any) {
+      setIsTyping(false);
+    
+      if (error.message?.includes('Too many')) {
+        setRateLimitError('Slow down there! 😅 Let\'s chat a bit slower.');
+      }
+    
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        text: error.message || "Oops! Something went wrong. Try again! 😊",
+        sender: 'bot' as const,
+        timestamp: Date.now()
+      }]);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -110,7 +152,7 @@ const Chatbot = () => {
   return (
     <>
       {/* Chatbot Toggle Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed right-6 bottom-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`relative w-16 h-16 rounded-full shadow-2xl transition-all duration-500 transform hover:scale-110 ${
@@ -120,7 +162,7 @@ const Chatbot = () => {
           }`}
         >
           {isOpen ? (
-            <X className="w-8 h-8 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+            <X className="absolute top-1/2 left-1/2 w-8 h-8 text-white transform -translate-x-1/2 -translate-y-1/2" />
           ) : (
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
               <div className="text-2xl animate-bounce">{getBotEmoji()}</div>
@@ -138,11 +180,11 @@ const Chatbot = () => {
 
         {/* Floating helper text */}
         {!isOpen && (
-          <div className="absolute bottom-20 right-0 bg-white/95 backdrop-blur-md rounded-2xl px-4 py-2 shadow-xl border border-white/20 animate-bounce-slow">
+          <div className="absolute right-0 bottom-20 px-4 py-2 rounded-2xl border shadow-xl backdrop-blur-md bg-white/95 border-white/20 animate-bounce-slow">
             <p className="text-sm font-medium text-gray-800 whitespace-nowrap">
               Need help? Chat with me! 💬
             </p>
-            <div className="absolute top-full right-4 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white/95"></div>
+            <div className="absolute right-4 top-full w-0 h-0 border-t-8 border-r-8 border-l-8 border-l-transparent border-r-transparent border-t-white/95"></div>
           </div>
         )}
       </div>
@@ -151,16 +193,16 @@ const Chatbot = () => {
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 z-40 animate-fade-in-up overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 p-4 text-white">
+          <div className="p-4 text-white bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-float">
+                <div className="flex justify-center items-center w-12 h-12 rounded-full bg-white/20 animate-float">
                   <span className="text-2xl">{getBotEmoji()}</span>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+                <div className="absolute -right-1 -bottom-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
               </div>
               <div>
-                <h3 className="font-bold text-lg">Prompty</h3>
+                <h3 className="text-lg font-bold">Prompty</h3>
                 <p className="text-sm text-white/80">Your Creative Assistant</p>
               </div>
               <div className="flex-1"></div>
@@ -173,7 +215,7 @@ const Chatbot = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 p-4 h-80 overflow-y-auto space-y-4 bg-gradient-to-b from-gray-50/50 to-white/50">
+          <div className="overflow-y-auto flex-1 p-4 space-y-4 h-80 bg-gradient-to-b from-gray-50/50 to-white/50">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -187,9 +229,9 @@ const Chatbot = () => {
                   }`}
                 >
                   {message.sender === 'bot' && (
-                    <div className="flex items-center space-x-2 mb-1">
+                    <div className="flex items-center mb-1 space-x-2">
                       <span className="text-lg">{getBotEmoji()}</span>
-                      <span className="text-xs text-gray-500 font-medium">Prompty</span>
+                      <span className="text-xs font-medium text-gray-500">Prompty</span>
                     </div>
                   )}
                   <p className="text-sm leading-relaxed">{message.text}</p>
@@ -200,7 +242,7 @@ const Chatbot = () => {
             {/* Typing indicator */}
             {isTyping && (
               <div className="flex justify-start animate-fade-in">
-                <div className="bg-white px-4 py-3 rounded-2xl shadow-md border border-gray-100">
+                <div className="px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-md">
                   <div className="flex items-center space-x-2">
                     <span className="text-lg">{getBotEmoji()}</span>
                     <div className="flex space-x-1">
@@ -216,7 +258,12 @@ const Chatbot = () => {
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-gray-100 bg-white/80 backdrop-blur-md">
+          <div className="p-4 border-t border-gray-100 backdrop-blur-md bg-white/80">
+            {rateLimitError && (
+              <div className="p-2 mb-3 text-sm text-center text-red-600 bg-red-50 rounded-lg border border-red-200">
+                {rateLimitError}
+              </div>
+            )}
             <div className="flex items-center space-x-3">
               <input
                 type="text"
@@ -224,16 +271,20 @@ const Chatbot = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message... 💭"
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-sm"
+                maxLength={500}
+                className="flex-1 px-4 py-3 text-sm rounded-2xl border border-gray-200 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim()}
-                className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl hover:shadow-lg hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center"
+                disabled={!inputValue.trim() || isTyping}
+                className="flex justify-center items-center w-12 h-12 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl transition-all duration-300 hover:shadow-lg hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <Send className="w-5 h-5" />
               </button>
             </div>
+            <p className="mt-2 text-xs text-center text-gray-400">
+              {inputValue.length}/500 characters
+            </p>
           </div>
         </div>
       )}

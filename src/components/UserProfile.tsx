@@ -1,88 +1,178 @@
-import React, { useState } from 'react';
-import { ArrowLeft, User, Mail, MapPin, Calendar, Link, Settings, Upload, Heart, Copy, CreditCard as Edit3, Camera, Sparkles, Crown, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, User, Mail, Settings, Heart, Copy, CreditCard as Edit3, Camera, Sparkles, Crown, Plus } from 'lucide-react';
+import { apiFetch, getAccessToken } from '../lib/api';
 
 interface UserProfileProps {
   user: any;
   onBack: () => void;
+  onShowUpload?: () => void;
+  onDeletePrompt?: (promptId: string) => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, onBack }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,onDeletePrompt   }) => {
+  const baseUrl = 'http://localhost:4000';
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: user?.name || 'John Doe',
-    email: user?.email || 'john@example.com',
-    bio: user?.bio || 'AI enthusiast and creative prompt designer. Love exploring the boundaries of artificial intelligence.',
-    location: user?.location || 'San Francisco, CA',
-    website: user?.website || 'johndoe.com',
-    avatar: user?.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200'
+  const [profileData, setProfileData] = useState<any>({
+    name: user?.name || '',
+    email: user?.email || '',
+    userId: user?.userId || '',
+    avatar: user?.avatar || ''
   });
+  const [stats, setStats] = useState({ prompts: 0, followers: 0, following: 0, totalLikes: 0 });
+  const [prompts, setPrompts] = useState<Array<any>>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [newPhoto, setNewPhoto] = useState<File | null>(null);
 
-  const [userStats] = useState({
-    prompts: 24,
-    followers: 1250,
-    following: 340,
-    totalLikes: 5600,
-    totalUses: 12400,
-    joinDate: 'March 2024'
-  });
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setError(null);
+        const accessToken = getAccessToken();
+        if (!accessToken) return;
+        // Option A: use existing backend endpoints (no /api/users/me/profile).
+        // 1) Resolve current user from auth
+        const meRes = await apiFetch(`/api/auth/me`);
+        if (!meRes.ok) {
+          const msg = await meRes.json().catch(() => ({}));
+          throw new Error(msg?.error || msg?.message || 'Failed to load current user');
+        }
+        const me = await meRes.json();
+        const email: string | undefined = me?.user?.email;
+        if (!email) throw new Error('Failed to resolve current user email');
 
-  const [userPrompts] = useState([
-    {
-      id: 1,
-      title: "Cyberpunk Neon City",
-      prompt: "Futuristic cyberpunk cityscape at night with neon lights, flying cars, and holographic advertisements",
-      result: "https://images.pexels.com/photos/2159065/pexels-photo-2159065.jpeg?auto=compress&cs=tinysrgb&w=400",
-      likes: 892,
-      uses: 2100,
-      category: "Digital Art"
-    },
-    {
-      id: 2,
-      title: "Mystical Forest",
-      prompt: "Enchanted forest with glowing mushrooms, fairy lights, and magical creatures in ethereal lighting",
-      result: "https://images.pexels.com/photos/1438248/pexels-photo-1438248.jpeg?auto=compress&cs=tinysrgb&w=400",
-      likes: 654,
-      uses: 1800,
-      category: "Fantasy"
-    },
-    {
-      id: 3,
-      title: "Modern Architecture",
-      prompt: "Minimalist concrete building with large glass windows and geometric shapes in natural lighting",
-      result: "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=400",
-      likes: 1203,
-      uses: 3200,
-      category: "Architecture"
-    }
-  ]);
+        // 2) Load public profile by email (includes prompts array)
+        const res = await apiFetch(`/api/users/${encodeURIComponent(email)}/profile`);
+        if (!res.ok) {
+          const msg = await res.json().catch(() => ({}));
+          throw new Error(msg?.error || msg?.message || 'Failed to load profile');
+        }
+        const data = await res.json();
+
+        const avatar = data?.user?.profilePhoto
+          ? (String(data.user.profilePhoto).startsWith('http') ? data.user.profilePhoto : `${baseUrl}${data.user.profilePhoto}`)
+          : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data?.user?.name || 'U')}`;
+        setProfileData({
+          name: data.user.name,
+          email: data.user.email,
+          userId: data.user.userId,
+          avatar
+        });
+
+        const backendPrompts: any[] = Array.isArray(data?.prompts) ? data.prompts : [];
+        const totalLikes = backendPrompts.reduce((sum, p) => sum + (Array.isArray(p?.likes) ? p.likes.length : 0), 0);
+        setStats({
+          prompts: backendPrompts.length,
+          followers: data?.user?.followersCount ?? (Array.isArray(data?.user?.followers) ? data.user.followers.length : 0),
+          following: data?.user?.followingCount ?? (Array.isArray(data?.user?.following) ? data.user.following.length : 0),
+          totalLikes,
+        });
+
+        const mapped = backendPrompts.map((p: any) => {
+          const img = p?.image
+            ? (String(p.image).startsWith('http') ? p.image : `${baseUrl}${p.image}`)
+            : `https://picsum.photos/seed/${p?._id || 'prompt'}/600/400`;
+          return {
+            id: p._id,
+            title: p.title,
+            prompt: p.content,
+            result: img,
+            likes: Array.isArray(p?.likes) ? p.likes.length : 0,
+            uses: 0,
+            category: p.category
+          };
+        });
+        setPrompts(mapped);
+      } catch (e: any) {
+        setError(e?.message || 'Something went wrong');
+      }
+    };
+    load();
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
+    setProfileData((prev: any) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically save to backend
-    console.log('Saving profile:', profileData);
+    setError(null);
+    setSaving(true);
+    const run = async () => {
+      try {
+        const accessToken = getAccessToken();
+        if (!accessToken) throw new Error('Not authenticated');
+        // Backend currently supports avatar update via:
+        // PATCH /api/users/me/avatar  (multipart field name: "photo")
+        if (!newPhoto) throw new Error('Please choose a photo to upload');
+
+        const form = new FormData();
+        form.append('photo', newPhoto);
+        const res = await apiFetch(`/api/users/me/avatar`, { method: 'PATCH', body: form });
+        if (!res.ok) {
+          const msg = await res.json().catch(() => ({}));
+          throw new Error(msg?.error || msg?.message || 'Failed to update avatar');
+        }
+        const out = await res.json();
+        const avatar = out?.profilePhoto
+          ? (String(out.profilePhoto).startsWith('http') ? out.profilePhoto : `${baseUrl}${out.profilePhoto}`)
+          : profileData.avatar;
+        setProfileData((prev: any) => ({ ...prev, avatar }));
+        setIsEditing(false);
+        setNewPhoto(null);
+      } catch (e: any) {
+        setError(e?.message || 'Something went wrong');
+      } finally {
+        setSaving(false);
+      }
+    };
+    run();
   };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setNewPhoto(file);
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileData(prev => ({ ...prev, avatar: e.target?.result as string }));
-      };
+      reader.onload = (e) => setProfileData((prev: any) => ({ ...prev, avatar: e.target?.result as string }));
       reader.readAsDataURL(file);
+    }
+  };
+
+  
+  const handleDeletePrompt = async (promptId: string) => {
+    if (!promptId) return;
+    if (!confirm('Are you sure you want to delete this prompt?')) return;
+  
+    try {
+      const res = await apiFetch(`/api/prompts/${encodeURIComponent(promptId)}`, {
+        method: 'DELETE',   // ✅ API called ONCE here only
+      });
+  
+      if (!res.ok) {
+        const msg = await res.json().catch(() => ({}));
+        throw new Error(msg?.error || msg?.message || 'Failed to delete prompt');
+      }
+  
+      // ✅ Remove from profile page
+      setPrompts(prev => prev.filter(p => String(p.id) !== String(promptId)));
+  
+      // ✅ Remove from home feed (no API call)
+      onDeletePrompt?.(promptId);
+  
+      // ✅ Update stats
+      setStats(prev => ({ ...prev, prompts: Math.max(0, prev.prompts - 1) }));
+  
+    } catch (e: any) {
+      setError(e?.message || 'Something went wrong');
     }
   };
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-white">
         <div className="text-center">
-          <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Please Sign In</h2>
+          <User className="mx-auto mb-4 w-16 h-16 text-gray-400" />
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">Please Sign In</h2>
           <p className="text-gray-600">You need to be logged in to view your profile</p>
         </div>
       </div>
@@ -90,29 +180,29 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="py-8 min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="px-4 mx-auto max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8 animate-fade-in-up">
+        <div className="flex justify-between items-center mb-8 animate-fade-in-up">
           <button
             onClick={onBack}
-            className="p-3 hover:bg-white/80 rounded-full transition-all duration-300 hover:scale-110 backdrop-blur-sm"
+            className="p-3 rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/80 hover:scale-110"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="p-3 hover:bg-white/80 rounded-full transition-all duration-300 hover:scale-110 backdrop-blur-sm"
+            className="p-3 rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/80 hover:scale-110"
           >
             {isEditing ? <Settings className="w-6 h-6" /> : <Edit3 className="w-6 h-6" />}
           </button>
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-8 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+        <div className="overflow-hidden mb-8 bg-white rounded-3xl shadow-2xl animate-fade-in-up" style={{animationDelay: '0.2s'}}>
           {/* Cover */}
-          <div className="h-40 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 relative">
+          <div className="relative h-40 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600">
             <div className="absolute inset-0 bg-black/20"></div>
           </div>
 
@@ -120,14 +210,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack }) => {
           <div className="relative px-8 pb-8">
             {/* Avatar */}
             <div className="relative -mt-20 mb-6">
-              <div className="relative inline-block">
+              <div className="inline-block relative">
                 <img
                   src={profileData.avatar}
                   alt={profileData.name}
-                  className="w-32 h-32 rounded-full border-4 border-white shadow-xl object-cover"
+                  className="object-cover w-32 h-32 rounded-full border-4 border-white shadow-xl"
                 />
                 {isEditing && (
-                  <label className="absolute bottom-2 right-2 w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-all duration-300 shadow-lg">
+                  <label className="flex absolute right-2 bottom-2 justify-center items-center w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full shadow-lg transition-all duration-300 cursor-pointer hover:scale-110">
                     <Camera className="w-5 h-5 text-white" />
                     <input
                       type="file"
@@ -139,74 +229,58 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack }) => {
                 )}
               </div>
               {user.verified && (
-                <div className="absolute bottom-2 left-24 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-                  <span className="text-white text-xs">✓</span>
+                <div className="flex absolute bottom-2 left-24 justify-center items-center w-8 h-8 bg-blue-500 rounded-full border-2 border-white shadow-lg">
+                  <span className="text-xs text-white">✓</span>
                 </div>
               )}
             </div>
 
             {/* Profile Info */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               <div className="space-y-6">
                 {isEditing ? (
                   <>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Full Name</label>
                       <input
                         type="text"
                         value={profileData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
+                        className="px-4 py-3 w-full rounded-xl border-2 border-gray-200 transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Username</label>
+                      <input
+                        type="text"
+                        value={profileData.userId}
+                        onChange={(e) => handleInputChange('userId', e.target.value)}
+                        className="px-4 py-3 w-full rounded-xl border-2 border-gray-200 transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Email</label>
                       <input
                         type="email"
                         value={profileData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
-                      <textarea
-                        value={profileData.bio}
-                        onChange={(e) => handleInputChange('bio', e.target.value)}
-                        rows={4}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 resize-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Location</label>
-                      <input
-                        type="text"
-                        value={profileData.location}
-                        onChange={(e) => handleInputChange('location', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Website</label>
-                      <input
-                        type="url"
-                        value={profileData.website}
-                        onChange={(e) => handleInputChange('website', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
+                        className="px-4 py-3 w-full rounded-xl border-2 border-gray-200 transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
+                        disabled
                       />
                     </div>
                     <button
                       onClick={handleSave}
-                      className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
+                      disabled={saving}
+                      className="py-3 w-full font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 disabled:opacity-50"
                     >
-                      Save Changes
+                      {saving ? 'Saving…' : 'Save Changes'}
                     </button>
                   </>
                 ) : (
                   <>
                     <div>
-                      <h2 className="text-3xl font-bold text-gray-900 mb-2">{profileData.name}</h2>
-                      <p className="text-gray-600 text-lg leading-relaxed">{profileData.bio}</p>
+                      <h2 className="mb-2 text-3xl font-bold text-gray-900">{profileData.name}</h2>
+                      <p className="text-lg leading-relaxed text-gray-600">@{profileData.userId}</p>
                     </div>
                     
                     <div className="space-y-3">
@@ -214,50 +288,34 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack }) => {
                         <Mail className="w-5 h-5" />
                         <span>{profileData.email}</span>
                       </div>
-                      <div className="flex items-center space-x-3 text-gray-600">
-                        <MapPin className="w-5 h-5" />
-                        <span>{profileData.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-3 text-gray-600">
-                        <Calendar className="w-5 h-5" />
-                        <span>Joined {userStats.joinDate}</span>
-                      </div>
-                      <div className="flex items-center space-x-3 text-gray-600">
-                        <Link className="w-5 h-5" />
-                        <span className="text-purple-600 hover:underline cursor-pointer">{profileData.website}</span>
-                      </div>
                     </div>
                   </>
                 )}
               </div>
 
               {/* Stats */}
-              <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
+              <div className="p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl">
+                <h3 className="flex items-center mb-6 space-x-2 text-xl font-bold text-gray-900">
                   <Crown className="w-6 h-6 text-purple-600" />
                   <span>Your Stats</span>
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <div className="text-2xl font-bold text-purple-600">{userStats.prompts}</div>
+                  <div className="p-4 text-center bg-white rounded-xl shadow-sm">
+                    <div className="text-2xl font-bold text-purple-600">{stats.prompts}</div>
                     <div className="text-sm text-gray-500">Prompts</div>
                   </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <div className="text-2xl font-bold text-pink-600">{userStats.followers.toLocaleString()}</div>
+                  <div className="p-4 text-center bg-white rounded-xl shadow-sm">
+                    <div className="text-2xl font-bold text-pink-600">{stats.followers.toLocaleString()}</div>
                     <div className="text-sm text-gray-500">Followers</div>
                   </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <div className="text-2xl font-bold text-blue-600">{userStats.following}</div>
+                  <div className="p-4 text-center bg-white rounded-xl shadow-sm">
+                    <div className="text-2xl font-bold text-blue-600">{stats.following}</div>
                     <div className="text-sm text-gray-500">Following</div>
                   </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <div className="text-2xl font-bold text-green-600">{userStats.totalLikes.toLocaleString()}</div>
+                  <div className="p-4 text-center bg-white rounded-xl shadow-sm">
+                    <div className="text-2xl font-bold text-green-600">{stats.totalLikes.toLocaleString()}</div>
                     <div className="text-sm text-gray-500">Total Likes</div>
                   </div>
-                </div>
-                <div className="mt-4 text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl">
-                  <div className="text-2xl font-bold text-purple-700">{userStats.totalUses.toLocaleString()}</div>
-                  <div className="text-sm text-purple-600 font-medium">Total Uses</div>
                 </div>
               </div>
             </div>
@@ -266,36 +324,62 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack }) => {
 
         {/* User's Prompts */}
         <div className="animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
-            <Sparkles className="w-6 h-6 text-purple-600" />
-            <span>My Prompts</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userPrompts.map((prompt) => (
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="flex items-center space-x-2 text-2xl font-bold text-gray-900">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              <span>My Prompts</span>
+              <span className="text-lg font-normal text-gray-500">({prompts.length})</span>
+            </h2>
+            {onShowUpload && (
+              <button
+                onClick={onShowUpload}
+                className="flex items-center px-6 py-3 space-x-2 font-semibold text-white bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 rounded-xl transition-all duration-300 group hover:shadow-2xl hover:scale-105"
+              >
+                <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+                <span>Upload Prompt</span>
+              </button>
+            )}
+          </div>
+          
+          {prompts.length === 0 ? (
+            /* Empty State */
+            <div className="p-12 text-center bg-white rounded-2xl shadow-lg">
+              <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full">
+                <Sparkles className="w-12 h-12 text-purple-600" />
+              </div>
+              <h3 className="mb-3 text-2xl font-bold text-gray-900">No Prompts Yet</h3>
+              <p className="mx-auto mb-6 max-w-md text-gray-600">
+                Start your creative journey by uploading your first AI prompt! Share your ideas and inspire the community.
+              </p>
+            </div>
+          ) : (
+            /* Prompts Grid */
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {prompts.map((prompt) => (
               <div
                 key={prompt.id}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer hover:scale-105"
+                className="overflow-hidden bg-white rounded-2xl shadow-lg transition-all duration-300 cursor-pointer hover:shadow-xl group hover:scale-105"
               >
-                <div className="relative overflow-hidden">
+                <div className="overflow-hidden relative">
                   <img
                     src={prompt.result}
                     alt={prompt.title}
-                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="object-cover w-full h-48 transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute top-3 left-3">
-                    <span className="bg-white/90 backdrop-blur-sm text-xs font-bold px-3 py-1 rounded-full text-gray-800">
+                    <span className="px-3 py-1 text-xs font-bold text-gray-800 rounded-full backdrop-blur-sm bg-white/90">
                       {prompt.category}
                     </span>
                   </div>
                 </div>
                 
                 <div className="p-4">
-                  <h3 className="font-bold text-gray-900 mb-2">{prompt.title}</h3>
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                  <h3 className="mb-2 font-bold text-gray-900">{prompt.title}</h3>
+                  <p className="mb-3 text-sm text-gray-600 line-clamp-2">
                     {prompt.prompt}
                   </p>
                   
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex justify-between items-center text-xs text-gray-500">
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-1">
                         <Heart className="w-3 h-3" />
@@ -306,11 +390,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack }) => {
                         <span>{prompt.uses}</span>
                       </div>
                     </div>
+                    <button onClick={() => handleDeletePrompt(String(prompt.id))} className="px-3 py-1 text-red-600 rounded-lg border hover:bg-red-50">
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
+          {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
         </div>
       </div>
     </div>

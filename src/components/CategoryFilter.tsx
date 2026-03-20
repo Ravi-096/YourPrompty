@@ -29,7 +29,8 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onCat
     { id: 'abstract', name: 'Abstract', emoji: '🌈' },
     { id: 'food', name: 'Food', emoji: '🍕' },
     { id: 'fashion', name: 'Fashion', emoji: '👗' },
-    { id: 'architecture', name: 'Architecture', emoji: '🏛️' }
+    { id: 'architecture', name: 'Architecture', emoji: '🏛️' },
+    { id: 'general', name: 'General', emoji: '📋' }
   ];
 
   return (
@@ -41,8 +42,8 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onCat
             onClick={() => onCategoryChange(category.id)}
             className={`${isMobile ? 'px-4 py-2 text-sm' : 'px-6 py-3'} rounded-full font-medium transition-all duration-300 flex items-center space-x-2 hover:scale-105 whitespace-nowrap ${
               selectedCategory === category.id
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg backdrop-blur-xl ring-2 ring-purple-400/30'
+                : 'bg-white/80 backdrop-blur-xl text-gray-600 hover:bg-white/90 border border-white/30 shadow-md ring-1 ring-black/5 hover:ring-2 hover:ring-purple-300/50'
             }`}
           >
             <span className={isMobile ? 'text-sm' : ''}>{category.emoji}</span>

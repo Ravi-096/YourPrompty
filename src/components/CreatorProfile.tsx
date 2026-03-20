@@ -53,6 +53,13 @@ const CreatorProfile: React.FC<CreatorProfileProps> = ({ creator, onBack }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-8">
       <div className="max-w-4xl mx-auto px-4">
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="text-lg font-semibold text-gray-900">Creator</div>
+          <div />
+        </div>
         {/* Profile Header */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
           <div className="h-32 bg-gradient-to-r from-purple-600 to-pink-600"></div>

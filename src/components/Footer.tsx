@@ -1,7 +1,14 @@
 import React from 'react';
 import { Heart, Twitter, Instagram, Github } from 'lucide-react';
 
-const Footer = () => {
+interface FooterProps {
+  onNavigateHome?: () => void;
+  onShowAuth?: () => void;
+  onShowUpload?: () => void;
+  onShowAIExplorer?: () => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onNavigateHome, onShowAuth, onShowUpload, onShowAIExplorer }) => {
   return (
     <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-16">
       <div className="max-w-7xl mx-auto px-4">
@@ -22,20 +29,40 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Platform</h4>
             <ul className="space-y-2 text-gray-400">
-              <li className="hover:text-white cursor-pointer transition-colors">Browse Prompts</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Create Account</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Upload Prompts</li>
+              <li 
+                onClick={onNavigateHome}
+                className="hover:text-white cursor-pointer transition-colors"
+              >
+                Browse Prompts
+              </li>
+              <li 
+                onClick={onShowAuth}
+                className="hover:text-white cursor-pointer transition-colors"
+              >
+                Create Account
+              </li>
+              <li 
+                onClick={onShowUpload}
+                className="hover:text-white cursor-pointer transition-colors"
+              >
+                Upload Prompts
+              </li>
               <li className="hover:text-white cursor-pointer transition-colors">Premium Features</li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Community</h4>
+            <h4 className="font-semibold mb-4">Resources</h4>
             <ul className="space-y-2 text-gray-400">
-              <li className="hover:text-white cursor-pointer transition-colors">Guidelines</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Support</li>
+              <li 
+                onClick={onShowAIExplorer}
+                className="hover:text-white cursor-pointer transition-colors"
+              >
+                Explore AI Models
+              </li>
+              <li className="hover:text-white cursor-pointer transition-colors">Help & Support</li>
+              <li className="hover:text-white cursor-pointer transition-colors">About</li>
               <li className="hover:text-white cursor-pointer transition-colors">Blog</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Newsletter</li>
             </ul>
           </div>
 
