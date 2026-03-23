@@ -71,8 +71,8 @@ function App() {
             verified: false,
           },
           likes: p.likes?.length ?? 0,
+          liked: p.liked ?? false,
           uses:  0,
-          liked: false,
         }));
         setFeedItems(mapped);
 

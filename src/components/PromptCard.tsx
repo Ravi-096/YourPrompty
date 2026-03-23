@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Heart, Copy, Users, Check } from 'lucide-react';
 import AIModelSelector from './AIModelSelector';
 import { apiFetch, getAccessToken } from '../lib/api';
@@ -37,6 +37,11 @@ const PromptCard: React.FC<PromptCardProps> = ({ prompt, onViewCreator, index, i
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
+
+  useEffect(() => {
+    setIsLiked(!!prompt.liked);
+    setLikesCount(prompt.likes || 0);
+  }, [prompt.liked, prompt.likes]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(prompt.prompt);

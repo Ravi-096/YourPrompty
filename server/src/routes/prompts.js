@@ -19,6 +19,7 @@ const uploadMiddleware = (req, res, next) => {
 };
 
 // GET /api/prompts
+// GET /api/prompts
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const { search, category } = req.query;
@@ -27,12 +28,19 @@ router.get('/', optionalAuth, async (req, res, next) => {
     if (category) filter.category = category;
 
     const prompts = await Prompt.find(filter)
-
       .populate('creator', 'name userId email profilePhoto')
       .sort({ createdAt: -1 })
       .limit(50);
 
-    res.json(prompts);
+    // ✅ Mark which prompts the logged in user has liked
+    const result = prompts.map(p => ({
+      ...p.toObject(),
+      liked: req.user
+        ? p.likes.some(id => id.equals(req.user._id))
+        : false,
+    }));
+
+    res.json(result);
   } catch (err) {
     next(err);
   }
