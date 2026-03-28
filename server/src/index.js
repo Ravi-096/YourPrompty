@@ -10,7 +10,7 @@ import promptRoutes from './routes/prompts.js';
 import userRoutes from './routes/users.js';
 import chatRoutes from './routes/chat.js'; 
 import notificationRoutes from './routes/notifications.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import { errorHandler } from './middleware/errorhandler.js';
 const app = express();
 await connectDB();
 
