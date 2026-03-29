@@ -258,12 +258,12 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Beautiful focus states */
+/* Beautiful focus states 
 button:focus,
 input:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
-}
+} */
 
 /* Gradient text animation */
 .gradient-text {
