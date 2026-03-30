@@ -43,6 +43,37 @@ function App() {
       });
   }, []);
 
+  // ✅ Handle Google OAuth callback
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const accessToken  = params.get('accessToken');
+  const refreshToken = params.get('refreshToken');
+
+  if (accessToken && refreshToken) {
+    // Save tokens
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+
+    // Clean URL
+    window.history.replaceState({}, '', '/');
+
+    // Fetch user
+    apiFetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        const u = data?.user || data;
+        const avatar = u?.profilePhoto
+          ? (String(u.profilePhoto).startsWith('/')
+              ? `http://localhost:4000${u.profilePhoto}`
+              : u.profilePhoto)
+          : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u?.name || 'U')}`;
+        setUser({ ...u, avatar });
+        loadPrompts();
+      })
+      .catch(() => clearTokens());
+  }
+}, []);
+
   // Load prompts from backend
   const loadPrompts = () => {
     apiFetch('/api/prompts')

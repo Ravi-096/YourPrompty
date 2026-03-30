@@ -4,6 +4,8 @@ import User from '../models/User.js';
 import RefreshToken from '../models/RefreshToken.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jwt.js';
 import { protect } from '../middleware/auth.js';
+import passport from '../config/passport.js';
+
 
 const router = Router();
 
@@ -149,5 +151,41 @@ router.post('/signout', protect, async (req, res) => {
     await RefreshToken.deleteOne({ token: refreshToken });
   res.json({ message: 'Signed out successfully' });
 });
+
+
+
+
+// ── GOOGLE AUTH ───────────────────────────────────────────
+
+
+router.get('/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.CLIENT_URL}?auth=failed` }),
+  async (req, res) => {
+    try {
+      const user = req.user;
+
+      const accessToken  = signAccessToken(user._id);
+      const refreshToken = signRefreshToken(user._id);
+
+      await RefreshToken.create({
+        user:      user._id,
+        token:     refreshToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+
+
+      res.redirect(
+        `${process.env.CLIENT_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`
+      );
+    } catch (err) {
+      res.redirect(`${process.env.CLIENT_URL}?auth=failed`);
+    }
+  }
+);
 
 export default router;

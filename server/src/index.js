@@ -11,6 +11,13 @@ import userRoutes from './routes/users.js';
 import chatRoutes from './routes/chat.js'; 
 import notificationRoutes from './routes/notifications.js';
 import { errorHandler } from './middleware/errorHandler.js';
+
+import session from 'express-session';
+import passport from './config/passport.js';
+
+
+
+
 const app = express();
 await connectDB();
 
@@ -24,6 +31,16 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Global rate limit
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
