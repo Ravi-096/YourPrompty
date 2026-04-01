@@ -12,10 +12,11 @@ import AIModelExplorer from './components/AIModelExplorer';
 import UploadPromptModal from './components/UploadPromptModal';
 import UploadPromptPage from './components/UploadPromptPage';
 import PublicProfilePage from './components/PublicProfilePage';
+import UpdateProfilePage from './components/UpdateProfilePage';
 import { apiFetch, clearTokens, getAccessToken } from './lib/api';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'profile' | 'create-profile' | 'user-profile' | 'upload' | 'public-profile'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'profile' | 'create-profile' | 'user-profile' | 'upload' | 'public-profile' | 'update-profile'>('home');
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -162,6 +163,7 @@ useEffect(() => {
   };
 
   const handleShowAIExplorer = () => {
+    console.log('opening auth modal');
     setShowAIExplorer(true);
   };
 
@@ -169,8 +171,12 @@ useEffect(() => {
     setCurrentView('upload');
   };
 
+  const handleShowUpdateProfilePage = () => {
+    setCurrentView('update-profile');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <div className="min-h-screen bg-gray-50">
       <Header 
         onBackToHome={handleBackToHome} 
         showBackButton={currentView === 'profile'} 
@@ -204,7 +210,7 @@ useEffect(() => {
               <div className="flex justify-end">
                 <button
                   onClick={handleShowUploadPage}
-                  className="px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow hover:shadow-lg"
+                  className="px-4 py-2 text-white bg-indigo-600 rounded-xl shadow-sm hover:shadow-sm hover:opacity-90"
                 >
                   Upload Prompt
                 </button>
@@ -229,18 +235,24 @@ useEffect(() => {
         />
       ) : currentView === 'public-profile' ? (
         <PublicProfilePage email={selectedCreator?.email} onBack={handleBackToHome} />
-         ) : (
+      ) : currentView === 'update-profile' ? (
+        <UpdateProfilePage user={user} onBack={handleBackToHome} />
+      ) : currentView === 'user-profile' ? (
         <UserProfile 
-            user={user} 
-            onBack={handleBackToHome} 
-            onShowUpload={handleShowUploadPage}
-            onDeletePrompt={(promptId: string) => {
-
-              setFeedItems(prev => prev?.filter(p => 
-                String(p.id) !== String(promptId)
-              ) ?? []);
-            }}
-          />
+          user={user} 
+          onBack={handleBackToHome} 
+          onShowUpload={handleShowUploadPage}
+          onShowUpdateProfile={handleShowUpdateProfilePage}
+          onDeletePrompt={(promptId: string) => {
+            setFeedItems(prev => prev?.filter(p => 
+              String(p.id) !== String(promptId)
+            ) ?? []);
+          }}
+        />
+      ) : (
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-gray-500">Page not found</p>
+        </div>
       )}
       
       <Footer 
