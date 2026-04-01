@@ -115,6 +115,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack }) => {
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 text-lg group-hover:border-gray-300"
                       placeholder="Enter your full name"
+                      required
                     />
                   </div>
                 </div>
@@ -129,6 +130,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack }) => {
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 text-lg group-hover:border-gray-300"
                       placeholder="your@email.com"
+                      required
                     />
                   </div>
                 </div>

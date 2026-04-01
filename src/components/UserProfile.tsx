@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Settings, Heart, Copy, CreditCard as Edit3, Camera, Sparkles, Crown, Plus } from 'lucide-react';
+import { ArrowLeft, User, Mail, Heart, Copy, Sparkles, Crown, Plus } from 'lucide-react';
 import { apiFetch, getAccessToken } from '../lib/api';
 
 interface UserProfileProps {
@@ -7,22 +7,21 @@ interface UserProfileProps {
   onBack: () => void;
   onShowUpload?: () => void;
   onDeletePrompt?: (promptId: string) => void;
+  onShowUpdateProfile?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,onDeletePrompt   }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,onDeletePrompt, onShowUpdateProfile   }) => {
   const baseUrl = 'http://localhost:4000';
-  const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState<any>({
     name: user?.name || '',
     email: user?.email || '',
     userId: user?.userId || '',
+    bio: user?.bio || '',
     avatar: user?.avatar || ''
   });
   const [stats, setStats] = useState({ prompts: 0, followers: 0, following: 0, totalLikes: 0 });
   const [prompts, setPrompts] = useState<Array<any>>([]);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [newPhoto, setNewPhoto] = useState<File | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -56,6 +55,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,on
           name: data.user.name,
           email: data.user.email,
           userId: data.user.userId,
+          bio: data.user.bio || '',
           avatar
         });
 
@@ -90,55 +90,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,on
     load();
   }, []);
 
-  const handleInputChange = (field: string, value: string) => {
-    setProfileData((prev: any) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = () => {
-    setError(null);
-    setSaving(true);
-    const run = async () => {
-      try {
-        const accessToken = getAccessToken();
-        if (!accessToken) throw new Error('Not authenticated');
-        // Backend currently supports avatar update via:
-        // PATCH /api/users/me/avatar  (multipart field name: "photo")
-        if (!newPhoto) throw new Error('Please choose a photo to upload');
-
-        const form = new FormData();
-        form.append('photo', newPhoto);
-        const res = await apiFetch(`/api/users/me/avatar`, { method: 'PATCH', body: form });
-        if (!res.ok) {
-          const msg = await res.json().catch(() => ({}));
-          throw new Error(msg?.error || msg?.message || 'Failed to update avatar');
-        }
-        const out = await res.json();
-        const avatar = out?.profilePhoto
-          ? (String(out.profilePhoto).startsWith('http') ? out.profilePhoto : `${baseUrl}${out.profilePhoto}`)
-          : profileData.avatar;
-        setProfileData((prev: any) => ({ ...prev, avatar }));
-        setIsEditing(false);
-        setNewPhoto(null);
-      } catch (e: any) {
-        setError(e?.message || 'Something went wrong');
-      } finally {
-        setSaving(false);
-      }
-    };
-    run();
-  };
-
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setNewPhoto(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setProfileData((prev: any) => ({ ...prev, avatar: e.target?.result as string }));
-      reader.readAsDataURL(file);
-    }
-  };
-
-  
   const handleDeletePrompt = async (promptId: string) => {
     if (!promptId) return;
     if (!confirm('Are you sure you want to delete this prompt?')) return;
@@ -192,10 +143,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,on
           </button>
           <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
           <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="p-3 rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/80 hover:scale-110"
+            onClick={onShowUpdateProfile}
+            className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105"
           >
-            {isEditing ? <Settings className="w-6 h-6" /> : <Edit3 className="w-6 h-6" />}
+            Update Profile
           </button>
         </div>
 
@@ -216,17 +167,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,on
                   alt={profileData.name}
                   className="object-cover w-32 h-32 rounded-full border-4 border-white shadow-xl"
                 />
-                {isEditing && (
-                  <label className="flex absolute right-2 bottom-2 justify-center items-center w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full shadow-lg transition-all duration-300 cursor-pointer hover:scale-110">
-                    <Camera className="w-5 h-5 text-white" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarChange}
-                      className="hidden"
-                    />
-                  </label>
-                )}
               </div>
               {user.verified && (
                 <div className="flex absolute bottom-2 left-24 justify-center items-center w-8 h-8 bg-blue-500 rounded-full border-2 border-white shadow-lg">
@@ -238,59 +178,22 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowUpload,on
             {/* Profile Info */}
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               <div className="space-y-6">
-                {isEditing ? (
-                  <>
-                    <div>
-                      <label className="block mb-2 text-sm font-semibold text-gray-700">Full Name</label>
-                      <input
-                        type="text"
-                        value={profileData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        className="px-4 py-3 w-full rounded-xl border-2 border-gray-200 transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
-                      />
+                <>
+                  <div>
+                    <h2 className="mb-2 text-3xl font-bold text-gray-900">{profileData.name}</h2>
+                    <p className="text-lg leading-relaxed text-gray-600">@{profileData.userId}</p>
+                    {profileData.bio && (
+                      <p className="mt-2 text-gray-700">{profileData.bio}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 text-gray-600">
+                      <Mail className="w-5 h-5" />
+                      <span>{profileData.email}</span>
                     </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-semibold text-gray-700">Username</label>
-                      <input
-                        type="text"
-                        value={profileData.userId}
-                        onChange={(e) => handleInputChange('userId', e.target.value)}
-                        className="px-4 py-3 w-full rounded-xl border-2 border-gray-200 transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-semibold text-gray-700">Email</label>
-                      <input
-                        type="email"
-                        value={profileData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        className="px-4 py-3 w-full rounded-xl border-2 border-gray-200 transition-all duration-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
-                        disabled
-                      />
-                    </div>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="py-3 w-full font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 disabled:opacity-50"
-                    >
-                      {saving ? 'Saving…' : 'Save Changes'}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <h2 className="mb-2 text-3xl font-bold text-gray-900">{profileData.name}</h2>
-                      <p className="text-lg leading-relaxed text-gray-600">@{profileData.userId}</p>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3 text-gray-600">
-                        <Mail className="w-5 h-5" />
-                        <span>{profileData.email}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
+                  </div>
+                </>
               </div>
 
               {/* Stats */}

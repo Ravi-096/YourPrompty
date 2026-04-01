@@ -69,6 +69,25 @@ router.delete('/:email/follow', protect, async (req, res) => {
   res.json({ followed: false });
 });
 
+// PATCH /api/users/me — update profile (name, userId, bio)
+router.patch('/me', protect, async (req, res) => {
+  const { name, userId, bio } = req.body;
+  if (name !== undefined) req.user.name = name;
+  if (userId !== undefined) {
+    // Check if userId is unique
+    const existing = await User.findOne({ userId, _id: { $ne: req.user._id } });
+    if (existing) return res.status(400).json({ error: 'Username already taken' });
+    req.user.userId = userId;
+  }
+  if (bio !== undefined) req.user.bio = bio;
+  await req.user.save();
+  res.json({
+    name: req.user.name,
+    userId: req.user.userId,
+    bio: req.user.bio,
+  });
+});
+
 // PATCH /api/users/me/avatar — upload profile photo to S3
 
 router.patch('/me/avatar', protect, avatarUpload.single('photo'), async (req, res) => {

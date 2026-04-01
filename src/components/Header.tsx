@@ -130,7 +130,7 @@ React.useEffect(() => {
   };
 
   return (
-    <header className={`sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm ${
+    <header className={`sticky top-0 z-50 bg-white border-b border-gray-100 ${
       isMobile ? 'px-4' : ''}`}>
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className={`flex items-center justify-between ${isMobile ? 'h-16' : 'h-18'}`}>
@@ -138,32 +138,27 @@ React.useEffect(() => {
             {showBackButton && (
               <button
                 onClick={onBackToHome}
-                className={`${isMobile ? 'p-2' : 'p-3'} hover:bg-gray-100 rounded-full transition-all duration-300 hover:scale-110 group`}
+                className={`${isMobile ? 'p-2' : 'p-3'} hover:bg-gray-100 rounded-full transition-all duration-300 group`}
               >
                 <ArrowLeft className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" />
               </button>
             )}
-            <div className="flex items-center space-x-3 cursor-pointer group" onClick={onBackToHome}>
-              <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-all duration-300 animate-pulse-glow`}>
-                <span className={`text-white font-bold ${isMobile ? 'text-sm' : 'text-lg'}`}>Y</span>
-              </div>
-              <h1 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>
-                yourPrompty
-              </h1>
-            </div>
+            <h1 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-semibold text-gray-900 cursor-pointer hover:opacity-90 transition-all duration-300`} onClick={onBackToHome}>
+              YourPrompty
+            </h1>
           </div>
 
           {!isMobile && (
             <div className="relative flex-1 mx-8 max-w-lg">
               <div className="relative group">
-                <Search className="absolute left-4 top-1/2 z-10 w-5 h-5 text-gray-400 transition-colors duration-300 transform -translate-y-1/2 group-focus-within:text-purple-500" />
+                <Search className="absolute left-4 top-1/2 z-10 w-5 h-5 text-gray-400 transition-colors duration-300 transform -translate-y-1/2 group-focus-within:text-gray-600" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
                   placeholder="Search prompts and users..."
-                  className="py-3 pr-4 pl-12 w-full placeholder-gray-400 text-gray-700 rounded-2xl border-2 border-gray-200 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 hover:border-gray-300"
+                  className="py-3 pr-4 pl-12 w-full placeholder-gray-400 text-gray-700 rounded-lg border border-gray-200 transition-all duration-300 focus:outline-none focus:border-gray-400 hover:border-gray-300"
                 />
                 {searchQuery && (
                   <button
@@ -180,14 +175,14 @@ React.useEffect(() => {
 
               {/* Search Results Dropdown */}
               {showSearchResults && (
-                <div className="overflow-y-auto absolute top-full z-50 mt-2 w-full max-h-96 rounded-2xl border border-gray-100 shadow-2xl backdrop-blur-xl bg-white/95 animate-fade-in-up">
+                <div className="overflow-y-auto absolute top-full z-50 mt-2 w-full max-h-96 rounded-xl border border-gray-100 shadow-sm bg-white">
                   {/* Filter Tabs */}
-                  <div className="flex sticky top-0 gap-2 items-center p-3 border-b border-gray-100 backdrop-blur-xl bg-white/95">
+                  <div className="flex sticky top-0 gap-2 items-center p-3 border-b border-gray-100 bg-white">
                     <button
                       onClick={() => setSearchType('all')}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                         searchType === 'all'
-                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                          ? 'bg-indigo-600 text-white shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -195,9 +190,9 @@ React.useEffect(() => {
                     </button>
                     <button
                       onClick={() => setSearchType('prompts')}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                         searchType === 'prompts'
-                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                          ? 'bg-indigo-600 text-white shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -205,9 +200,9 @@ React.useEffect(() => {
                     </button>
                     <button
                       onClick={() => setSearchType('users')}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                         searchType === 'users'
-                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                          ? 'bg-indigo-600 text-white shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -288,7 +283,7 @@ React.useEffect(() => {
           <div className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
             {/* Mobile Search Icon */}
             {isMobile && (
-              <button className="p-2 rounded-full transition-all duration-300 hover:bg-gray-100 hover:scale-110">
+              <button className="p-2 rounded-full transition-all duration-300 hover:bg-gray-100">
                 <Search className="w-5 h-5 text-gray-600" />
               </button>
             )}
@@ -296,9 +291,9 @@ React.useEffect(() => {
   {/* Bell Button */}
   <button
     onClick={handleOpenNotifications}
-    className={`relative ${isMobile ? 'p-2' : 'p-3'} hover:bg-gray-100 rounded-full transition-all duration-300 hover:scale-110 group`}
+    className={`relative ${isMobile ? 'p-2' : 'p-3'} hover:bg-gray-100 rounded-full transition-all duration-300 group`}
   >
-    <Bell className="w-5 h-5 text-gray-600 transition-colors duration-300 group-hover:text-purple-600" />
+    <Bell className="w-5 h-5 text-gray-600 transition-colors duration-300 group-hover:text-indigo-600" />
     {unreadCount > 0 && (
       <div className="flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs text-white bg-red-500 rounded-full animate-pulse">
         {unreadCount}
@@ -309,10 +304,8 @@ React.useEffect(() => {
   {/* Dropdown */}
   {showNotifications && (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
 
-      <div className="absolute right-0 z-50 mt-2 w-80 bg-white rounded-xl border shadow-lg animate-fadeIn">
+      <div className="absolute right-0 z-50 mt-2 w-80 bg-white rounded-xl border shadow-sm">
         {/* Header */}
         <div className="flex justify-between items-center p-4 font-semibold border-b">
           <span>Notifications</span>
@@ -377,9 +370,9 @@ React.useEffect(() => {
             <div className="relative">
               <button 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className={`flex items-center p-2 space-x-2 rounded-full transition-all duration-300 hover:bg-gray-100 hover:scale-105 group`}
+                className={`flex items-center p-2 space-x-2 rounded-full transition-all duration-300 hover:bg-gray-100 group`}
               >
-                <div className={`${isMobile ? 'w-7 h-7' : 'w-8 h-8'} bg-gradient-to-r from-purple-400 to-pink-400 rounded-full overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`${isMobile ? 'w-7 h-7' : 'w-8 h-8'} bg-indigo-600 rounded-full overflow-hidden flex items-center justify-center`}>
                   {user ? (
                     <img src={user.avatar} alt={user.name} className="object-cover w-full h-full rounded-full" />
                   ) : (
@@ -390,16 +383,19 @@ React.useEffect(() => {
 
               {/* Profile Dropdown */}
               {showProfileMenu && (
-                <div className={`absolute right-0 top-full mt-2 ${isMobile ? 'w-56' : 'w-64'} bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 py-2 animate-fade-in-up`}>
+                <div className={`absolute right-0 top-full mt-2 ${isMobile ? 'w-56' : 'w-64'} bg-white rounded-xl shadow-sm border border-gray-100 py-2 z-50`}>
                   <div className="px-4 py-3 border-b border-gray-100">
                     <div className="flex items-center space-x-3">
-                      <div className="flex justify-center items-center w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">Welcome!</p>
-                        <p className="text-sm text-gray-500">Ready to create?</p>
-                      </div>
+                      <div className="flex justify-center items-center w-12 h-12 bg-indigo-600 rounded-full overflow-hidden">
+                          {user?.avatar
+                            ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                            : <User className="w-6 h-6 text-white" />
+                          }
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{user?.name || 'Welcome!'}</p>
+                          <p className="text-sm text-gray-500">{user?.email || 'Ready to create?'}</p>
+                        </div>
                     </div>
                   </div>
                   
@@ -407,25 +403,25 @@ React.useEffect(() => {
                     {user ? (
                       <>
                         <button 
-                          onClick={() => {
-                            onShowProfile();
-                            setShowProfileMenu(false);
-                          }}
-                          className="flex items-center px-4 py-3 space-x-3 w-full text-left transition-colors duration-200 hover:bg-gray-50 group"
+                         onClick={() => {
+                             setShowProfileMenu(false);
+                             onShowProfile();
+                            }}
+                          className="flex items-center px-4 py-3 space-x-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50"
                         >
-                          <User className="w-4 h-4 text-gray-500 transition-colors duration-200 group-hover:text-purple-600" />
-                          <span className="text-gray-700 group-hover:text-gray-900">My Profile</span>
+                          <User className="w-4 h-4 text-gray-600" />
+                          <span>My Profile</span>
                         </button>
-                        <button className="flex items-center px-4 py-3 space-x-3 w-full text-left transition-colors duration-200 hover:bg-gray-50 group">
-                          <Settings className="w-4 h-4 text-gray-500 transition-colors duration-200 group-hover:text-purple-600" />
-                          <span className="text-gray-700 group-hover:text-gray-900">Settings</span>
+                        <button className="flex items-center px-4 py-3 space-x-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50">
+                          <Settings className="w-4 h-4 text-gray-600" />
+                          <span>Settings</span>
                         </button>
                         <div className="my-2 border-t border-gray-100"></div>
                         <button 
                           onClick={() => { onLogout?.(); setShowProfileMenu(false); }}
-                          className="flex items-center px-4 py-3 space-x-3 w-full text-left transition-colors duration-200 hover:bg-gray-50 group">
-                          <LogOut className="w-4 h-4 text-gray-500 transition-colors duration-200 group-hover:text-red-600" />
-                          <span className="text-gray-700 group-hover:text-gray-900">Sign Out</span>
+                          className="flex items-center px-4 py-3 space-x-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50">
+                          <LogOut className="w-4 h-4 text-red-600" />
+                          <span>Sign Out</span>
                         </button>
                       </>
                     ) : (
@@ -434,10 +430,10 @@ React.useEffect(() => {
                           onShowAuth();
                           setShowProfileMenu(false);
                         }}
-                        className="flex items-center px-4 py-3 space-x-3 w-full text-left transition-colors duration-200 hover:bg-gray-50 group"
+                        className="flex items-center px-4 py-3 space-x-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50"
                       >
-                        <UserPlus className="w-4 h-4 text-gray-500 transition-colors duration-200 group-hover:text-purple-600" />
-                        <span className="text-gray-700 group-hover:text-gray-900">Sign In / Sign Up</span>
+                        <UserPlus className="w-4 h-4 text-gray-600" />
+                        <span>Sign In / Sign Up</span>
                       </button>
                     )}
                   </div>
@@ -449,35 +445,35 @@ React.useEffect(() => {
             <div className="relative">
               <button 
                 onClick={() => setShowMainMenu(!showMainMenu)}
-                className={`${isMobile ? 'p-2' : 'p-3'} hover:bg-gray-100 rounded-full transition-all duration-300 hover:scale-110 group`}
+                className={`${isMobile ? 'p-2' : 'p-3'} hover:bg-gray-50 rounded-full transition-all duration-300 hover:opacity-90 group`}
               >
-                <Menu className="w-5 h-5 text-gray-600 transition-colors duration-300 group-hover:text-purple-600" />
+                <Menu className="w-5 h-5 text-gray-600 transition-colors duration-300 group-hover:text-indigo-600" />
               </button>
 
               {/* Main Menu Dropdown */}
               {showMainMenu && (
-                <div className={`absolute right-0 top-full py-2 mt-2 w-56 rounded-2xl border border-gray-100 shadow-2xl backdrop-blur-md bg-white/95 animate-fade-in-up`}>
+                <div className={`absolute right-0 top-full py-2 mt-2 w-56 rounded-xl border border-gray-100 shadow-sm bg-white z-50`}>
                   <button 
                     onClick={onShowAIExplorer}
-                    className="flex items-center px-4 py-3 space-x-3 w-full text-left text-gray-700 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-900"
+                    className="flex items-center px-4 py-3 space-x-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50 hover:opacity-90"
                   >
-                    <Bot className="w-4 h-4 text-purple-600" />
+                    <Bot className="w-4 h-4 text-indigo-600" />
                     <span>Explore AI Models</span>
                   </button>
                   <button 
                     onClick={() => { onShowUpload?.(); setShowMainMenu(false); }}
-                    className="px-4 py-3 w-full text-left text-gray-700 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-900"
+                    className="px-4 py-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50"
                   >
                     Upload Prompt
                   </button>
-                  <button className="px-4 py-3 w-full text-left text-gray-700 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-900">
+                  <button className="px-4 py-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50">
                     Browse Prompts
                   </button>
                   <div className="my-2 border-t border-gray-100"></div>
-                  <button className="px-4 py-3 w-full text-left text-gray-700 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-900">
+                  <button className="px-4 py-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50">
                     Help & Support
                   </button>
-                  <button className="px-4 py-3 w-full text-left text-gray-700 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-900">
+                  <button className="px-4 py-3 w-full text-left text-gray-600 transition-colors duration-200 hover:bg-gray-50">
                     About
                   </button>
                 </div>
@@ -488,12 +484,13 @@ React.useEffect(() => {
       </div>
 
       {/* Click outside to close menus */}
-      {(showProfileMenu || showMainMenu) && (
+      {(showProfileMenu || showMainMenu || showNotifications) && (
         <div 
-          className="fixed inset-0 z-40" 
+          className="fixed inset-0 z-30" 
           onClick={() => {
             setShowProfileMenu(false);
             setShowMainMenu(false);
+            setShowNotifications(false);
           }}
         ></div>
       )}
