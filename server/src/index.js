@@ -24,7 +24,9 @@ await connectDB();
 
 
 app.use(cors({
-  origin: ['https://your-prompty-digs3aso6-ravi-096s-projects.vercel.app/','http://localhost:5173'], 
+  origin: ['https://your-prompty.vercel.app',
+  'https://your-prompty-digs3aso6-ravi-096s-projects.vercel.app',
+  'http://localhost:5173'], 
   credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
